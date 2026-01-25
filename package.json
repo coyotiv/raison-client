@@ -1,0 +1,72 @@
+{
+  "name": "@coyotiv/raison-client",
+  "version": "0.1.2",
+  "description": "Official SDK for Raison prompt management platform",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "check": "biome check .",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "raison",
+    "prompts",
+    "prompt-management",
+    "ai",
+    "llm",
+    "openai",
+    "anthropic",
+    "sdk"
+  ],
+  "author": "Coyotiv",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/coyotiv/raison-client.git"
+  },
+  "bugs": {
+    "url": "https://github.com/coyotiv/raison-client/issues"
+  },
+  "homepage": "https://github.com/coyotiv/raison-client#readme",
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.13",
+    "@types/node": "^20.10.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  },
+  "peerDependencies": {
+    "typescript": ">=4.7.0"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "handlebars": "^4.7.8",
+    "memgoose": "^2.1.1",
+    "socket.io-client": "^4.8.3"
+  }
+}
