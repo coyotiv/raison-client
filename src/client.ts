@@ -59,10 +59,6 @@ export class Raison {
     this.socket.on('prompt:deployed', async (prompt: Prompt) => {
       await this.Prompt.findOneAndUpdate({ id: prompt.id }, prompt, { upsert: true })
     })
-
-    this.socket.on('prompt:undeployed', async (data: { id: string }) => {
-      await this.Prompt.deleteOne({ id: data.id })
-    })
   }
 
   async render(promptId: string, variables?: Record<string, unknown>): Promise<string> {

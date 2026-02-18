@@ -267,18 +267,6 @@ describe('Raison', () => {
       const result = await client.render('new-id')
       expect(result).toBe('New!')
     })
-
-    it('removes prompt on prompt:undeployed', async () => {
-      const client = new Raison({ apiKey: 'rsn_test123' })
-      await simulateSync([mockPrompt])
-
-      await client.render('test-prompt-id')
-
-      await socketHandlers['prompt:undeployed']?.({ id: 'test-prompt-id' })
-
-      const result = await client.render('test-prompt-id')
-      expect(result).toBe('')
-    })
   })
 
   describe('isolation', () => {
