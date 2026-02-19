@@ -1,6 +1,6 @@
 {
-  "name": "@coyotiv/raison-client",
-  "version": "0.1.2",
+  "name": "raison",
+  "version": "0.1.3",
   "description": "Official SDK for Raison prompt management platform",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

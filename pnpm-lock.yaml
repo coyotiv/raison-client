@@ -12,7 +12,7 @@ importers:
         specifier: ^4.7.8
         version: 4.7.8
       memgoose:
-        specifier: 2.1.1
+        specifier: ^2.1.1
         version: 2.1.1
       socket.io-client:
         specifier: ^4.8.3

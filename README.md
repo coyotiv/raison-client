@@ -5,13 +5,13 @@ Official JavaScript/TypeScript SDK for [Raison](https://raison.ist) - prompt man
 ## Installation
 
 ```bash
-npm install @coyotiv/raison-client
+npm install raison
 ```
 
 ## Quick Start
 
 ```typescript
-import { Raison } from '@coyotiv/raison-client'
+import { Raison } from 'raison'
 
 const raison = new Raison({
   apiKey: 'rsn_dev_your_api_key',
