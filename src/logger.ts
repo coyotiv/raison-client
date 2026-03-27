@@ -19,14 +19,18 @@ const LOG_LEVELS: Record<LogLevel, number> = {
   error: 3,
 }
 
-export function createLogger(options?: LoggingOptions): Logger {
+export function createLogger(options?: LoggingOptions, base?: Logger): Logger {
   const level = options?.level ?? 'warn'
   const prefix = options?.prefix ?? '[Raison]'
   const threshold = LOG_LEVELS[level]
 
   function log(method: LogLevel, message: string, ...args: unknown[]): void {
     if (LOG_LEVELS[method] >= threshold) {
-      console[method](prefix, message, ...args)
+      if (base) {
+        base[method](message, ...args)
+      } else {
+        console[method](prefix, message, ...args)
+      }
     }
   }
 
@@ -38,19 +42,7 @@ export function createLogger(options?: LoggingOptions): Logger {
   }
 }
 
-function isLogger(value: unknown): value is Logger {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (value as Logger).debug === 'function' &&
-    typeof (value as Logger).info === 'function' &&
-    typeof (value as Logger).warn === 'function' &&
-    typeof (value as Logger).error === 'function'
-  )
-}
-
-export function resolveLogger(input?: Logger | LoggingOptions): Logger {
-  if (!input) return createLogger()
-  if (isLogger(input)) return input
-  return createLogger(input)
+export function resolveLogger(logger?: Logger, options?: LoggingOptions): Logger {
+  if (logger) return createLogger(options, logger)
+  return createLogger(options)
 }

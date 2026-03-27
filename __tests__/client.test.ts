@@ -172,14 +172,14 @@ describe('Raison', () => {
 
     it('logs reconnection attempts', () => {
       const customLogger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }
-      new Raison({ apiKey: 'rsn_test123', logger: customLogger })
+      new Raison({ apiKey: 'rsn_test123', logger: customLogger, logging: { level: 'info' } })
       managerHandlers.reconnect_attempt?.(3)
       expect(customLogger.info).toHaveBeenCalledWith('Reconnection attempt 3/10')
     })
 
     it('logs successful reconnection', () => {
       const customLogger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }
-      new Raison({ apiKey: 'rsn_test123', logger: customLogger })
+      new Raison({ apiKey: 'rsn_test123', logger: customLogger, logging: { level: 'info' } })
       managerHandlers.reconnect?.()
       expect(customLogger.info).toHaveBeenCalledWith('Reconnected successfully')
     })
@@ -387,7 +387,7 @@ describe('Raison', () => {
     })
 
     it('accepts logging options', () => {
-      const client = new Raison({ apiKey: 'rsn_test123', logger: { level: 'debug' } })
+      const client = new Raison({ apiKey: 'rsn_test123', logging: { level: 'debug' } })
       expect(client).toBeInstanceOf(Raison)
     })
 
@@ -398,7 +398,7 @@ describe('Raison', () => {
         warn: vi.fn(),
         error: vi.fn(),
       }
-      new Raison({ apiKey: 'rsn_test123', logger: customLogger })
+      new Raison({ apiKey: 'rsn_test123', logger: customLogger, logging: { level: 'debug' } })
       await simulateSync([mockPrompt])
       expect(customLogger.debug).toHaveBeenCalledWith('Synced prompt "Test Prompt" (id=test-prompt-id, v1)')
       expect(customLogger.debug).toHaveBeenCalledWith('Sync complete: 1 prompt(s)')
@@ -411,7 +411,7 @@ describe('Raison', () => {
         warn: vi.fn(),
         error: vi.fn(),
       }
-      new Raison({ apiKey: 'rsn_test123', logger: customLogger })
+      new Raison({ apiKey: 'rsn_test123', logger: customLogger, logging: { level: 'debug' } })
       await simulateSync([mockPrompt])
       await socketHandlers['prompt:deployed']?.({ ...mockPrompt, content: 'Updated!' })
       expect(customLogger.debug).toHaveBeenCalledWith('Prompt deployed: "Test Prompt" (id=test-prompt-id, v1)')

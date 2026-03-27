@@ -13,7 +13,8 @@ export interface ReconnectionConfig {
 export interface RaisonConfig {
   apiKey: string
   baseUrl?: string
-  logger?: Logger | LoggingOptions
+  logger?: Logger
+  logging?: LoggingOptions
   reconnection?: ReconnectionConfig | false
 }
 
@@ -37,7 +38,7 @@ export class Raison {
       throw new Error('Invalid API key format')
     }
 
-    this.logger = resolveLogger(config.logger)
+    this.logger = resolveLogger(config.logger, config.logging)
 
     const db = createDatabase({ storage: 'memory' })
     this.Prompt = db.model<Prompt>('Prompt', promptSchema)

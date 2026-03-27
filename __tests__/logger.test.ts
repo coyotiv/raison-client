@@ -61,39 +61,73 @@ describe('createLogger', () => {
     expect(spy).toHaveBeenCalledWith('[Raison]', 'msg', { detail: 1 })
     spy.mockRestore()
   })
+
+  it('delegates to base logger when provided', () => {
+    const base: Logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+    const logger = createLogger({ level: 'debug' }, base)
+    logger.info('hello', { extra: true })
+    expect(base.info).toHaveBeenCalledWith('hello', { extra: true })
+  })
+
+  it('filters messages below configured level with base logger', () => {
+    const base: Logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+    const logger = createLogger({ level: 'warn' }, base)
+    logger.debug('should not appear')
+    logger.info('should not appear')
+    expect(base.debug).not.toHaveBeenCalled()
+    expect(base.info).not.toHaveBeenCalled()
+  })
+
+  it('allows messages at or above configured level with base logger', () => {
+    const base: Logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+    const logger = createLogger({ level: 'warn' }, base)
+    logger.warn('yes')
+    logger.error('yes')
+    expect(base.warn).toHaveBeenCalledWith('yes')
+    expect(base.error).toHaveBeenCalledWith('yes')
+  })
 })
 
 describe('resolveLogger', () => {
-  it('creates default logger when input is undefined', () => {
+  it('creates default logger when no arguments', () => {
     const spy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const logger = resolveLogger(undefined)
+    const logger = resolveLogger()
     logger.warn('test')
     expect(spy).toHaveBeenCalledWith('[Raison]', 'test')
     spy.mockRestore()
   })
 
-  it('returns custom logger as-is when all methods present', () => {
-    const custom: Logger = {
-      debug: vi.fn(),
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-    }
-    const logger = resolveLogger(custom)
-    expect(logger).toBe(custom)
+  it('wraps custom logger with level filtering', () => {
+    const custom: Logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+    const logger = resolveLogger(custom, { level: 'warn' })
+    logger.debug('no')
+    logger.warn('yes')
+    expect(custom.debug).not.toHaveBeenCalled()
+    expect(custom.warn).toHaveBeenCalledWith('yes')
   })
 
-  it('creates logger from LoggingOptions', () => {
+  it('custom logger defaults to warn level', () => {
+    const custom: Logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+    const logger = resolveLogger(custom)
+    logger.debug('no')
+    logger.info('no')
+    logger.warn('yes')
+    expect(custom.debug).not.toHaveBeenCalled()
+    expect(custom.info).not.toHaveBeenCalled()
+    expect(custom.warn).toHaveBeenCalledWith('yes')
+  })
+
+  it('creates logger from options with debug level', () => {
     const spy = vi.spyOn(console, 'debug').mockImplementation(() => {})
-    const logger = resolveLogger({ level: 'debug' })
+    const logger = resolveLogger(undefined, { level: 'debug' })
     logger.debug('test')
     expect(spy).toHaveBeenCalledWith('[Raison]', 'test')
     spy.mockRestore()
   })
 
-  it('creates logger from LoggingOptions with custom prefix', () => {
+  it('creates logger from options with custom prefix', () => {
     const spy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const logger = resolveLogger({ prefix: '[MyApp]' })
+    const logger = resolveLogger(undefined, { prefix: '[MyApp]' })
     logger.warn('test')
     expect(spy).toHaveBeenCalledWith('[MyApp]', 'test')
     spy.mockRestore()
