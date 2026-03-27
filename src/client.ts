@@ -1,11 +1,13 @@
 import Handlebars from 'handlebars'
 import { createDatabase, type Model } from 'memgoose'
 import { io, type Socket } from 'socket.io-client'
+import { type Logger, type LoggingOptions, resolveLogger } from './logger'
 import { type Prompt, promptSchema } from './prompt'
 
 export interface RaisonConfig {
   apiKey: string
   baseUrl?: string
+  logger?: Logger | LoggingOptions
 }
 
 export class Raison {
@@ -18,6 +20,7 @@ export class Raison {
   private socket: Socket
   private Prompt: Model<Prompt>
   private readyPromise: Promise<void>
+  private logger: Logger
 
   constructor(config: RaisonConfig) {
     if (!config.apiKey) {
@@ -26,6 +29,8 @@ export class Raison {
     if (!config.apiKey.startsWith('rsn_')) {
       throw new Error('Invalid API key format')
     }
+
+    this.logger = resolveLogger(config.logger)
 
     const db = createDatabase({ storage: 'memory' })
     this.Prompt = db.model<Prompt>('Prompt', promptSchema)
@@ -44,6 +49,22 @@ export class Raison {
       reconnection: true,
     })
 
+    this.socket.on('connect', () => {
+      this.logger.info(`Connected to ${baseUrl}`)
+    })
+
+    this.socket.on('disconnect', () => {
+      this.logger.info('Disconnected')
+    })
+
+    this.socket.io.on('reconnect_attempt', () => {
+      this.logger.debug('Reconnecting...')
+    })
+
+    this.socket.on('connect_error', (err: Error) => {
+      this.logger.error(`Connection error: ${err.message}`)
+    })
+
     this.socket.on('sync', async (data: { prompts: Prompt[] }) => {
       const incomingIds = data.prompts.map((p) => p.id)
 
@@ -54,10 +75,12 @@ export class Raison {
       await this.Prompt.deleteMany({ id: { $nin: incomingIds } })
 
       resolveReady()
+      this.logger.debug(`Synced ${data.prompts.length} prompt(s)`)
     })
 
     this.socket.on('prompt:deployed', async (prompt: Prompt) => {
       await this.Prompt.findOneAndUpdate({ id: prompt.id }, prompt, { upsert: true })
+      this.logger.debug(`Prompt updated: ${prompt.id}`)
     })
   }
 
@@ -65,7 +88,10 @@ export class Raison {
     await this.readyPromise
 
     const prompt = await this.Prompt.findOne({ id: promptId })
-    if (!prompt?.content) return ''
+    if (!prompt?.content) {
+      this.logger.warn(`Prompt not found: ${promptId}`)
+      return ''
+    }
 
     if (!variables) return prompt.content
 
@@ -73,6 +99,7 @@ export class Raison {
       const template = Handlebars.compile(prompt.content, { noEscape: true })
       return template(variables)
     } catch {
+      this.logger.warn(`Template compile failed for prompt: ${promptId}`)
       return prompt.content
     }
   }

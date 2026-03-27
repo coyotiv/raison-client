@@ -29,3 +29,5 @@ npm-debug.log*
 # Lock files (use package-lock.json or yarn.lock, not both)
 # yarn.lock
 # pnpm-lock.yaml
+
+docs/
