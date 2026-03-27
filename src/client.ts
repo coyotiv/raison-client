@@ -91,17 +91,18 @@ export class Raison {
 
       for (const prompt of data.prompts) {
         await this.Prompt.findOneAndUpdate({ id: prompt.id }, prompt, { upsert: true })
+        this.logger.debug(`Synced prompt "${prompt.name}" (id=${prompt.id}, v${prompt.version})`)
       }
 
       await this.Prompt.deleteMany({ id: { $nin: incomingIds } })
 
       resolveReady()
-      this.logger.debug(`Synced ${data.prompts.length} prompt(s)`)
+      this.logger.debug(`Sync complete: ${data.prompts.length} prompt(s)`)
     })
 
     this.socket.on('prompt:deployed', async (prompt: Prompt) => {
       await this.Prompt.findOneAndUpdate({ id: prompt.id }, prompt, { upsert: true })
-      this.logger.debug(`Prompt updated: ${prompt.id}`)
+      this.logger.debug(`Prompt deployed: "${prompt.name}" (id=${prompt.id}, v${prompt.version})`)
     })
   }
 
@@ -113,6 +114,8 @@ export class Raison {
       this.logger.warn(`Prompt not found: ${promptId}`)
       return ''
     }
+
+    this.logger.debug(`Rendering prompt "${prompt.name}" (id=${promptId}, v${prompt.version})`)
 
     if (!variables) return prompt.content
 

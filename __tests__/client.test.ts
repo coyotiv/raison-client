@@ -400,7 +400,8 @@ describe('Raison', () => {
       }
       new Raison({ apiKey: 'rsn_test123', logger: customLogger })
       await simulateSync([mockPrompt])
-      expect(customLogger.debug).toHaveBeenCalledWith('Synced 1 prompt(s)')
+      expect(customLogger.debug).toHaveBeenCalledWith('Synced prompt "Test Prompt" (id=test-prompt-id, v1)')
+      expect(customLogger.debug).toHaveBeenCalledWith('Sync complete: 1 prompt(s)')
     })
 
     it('logs on prompt:deployed', async () => {
@@ -413,7 +414,7 @@ describe('Raison', () => {
       new Raison({ apiKey: 'rsn_test123', logger: customLogger })
       await simulateSync([mockPrompt])
       await socketHandlers['prompt:deployed']?.({ ...mockPrompt, content: 'Updated!' })
-      expect(customLogger.debug).toHaveBeenCalledWith('Prompt updated: test-prompt-id')
+      expect(customLogger.debug).toHaveBeenCalledWith('Prompt deployed: "Test Prompt" (id=test-prompt-id, v1)')
     })
 
     it('warns when prompt not found in render', async () => {
