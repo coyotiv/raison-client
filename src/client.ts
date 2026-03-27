@@ -4,10 +4,17 @@ import { io, type Socket } from 'socket.io-client'
 import { type Logger, type LoggingOptions, resolveLogger } from './logger'
 import { type Prompt, promptSchema } from './prompt'
 
+export interface ReconnectionConfig {
+  maxRetries?: number
+  delay?: number
+  delayMax?: number
+}
+
 export interface RaisonConfig {
   apiKey: string
   baseUrl?: string
   logger?: Logger | LoggingOptions
+  reconnection?: ReconnectionConfig | false
 }
 
 export class Raison {
@@ -42,11 +49,17 @@ export class Raison {
 
     const baseUrl = (config.baseUrl ?? Raison.BASE_URL).replace(/\/$/, '')
 
+    const reconnection = config.reconnection !== false
+    const reconnectionOpts = typeof config.reconnection === 'object' ? config.reconnection : {}
+
     this.socket = io(`${baseUrl}/sdk`, {
       path: '/socket/',
       auth: { apiKey: config.apiKey },
       transports: ['websocket', 'polling'],
-      reconnection: true,
+      reconnection,
+      reconnectionAttempts: reconnectionOpts.maxRetries ?? 10,
+      reconnectionDelay: reconnectionOpts.delay ?? 1000,
+      reconnectionDelayMax: reconnectionOpts.delayMax ?? 30000,
     })
 
     this.socket.on('connect', () => {
@@ -57,8 +70,16 @@ export class Raison {
       this.logger.info('Disconnected')
     })
 
-    this.socket.io.on('reconnect_attempt', () => {
-      this.logger.debug('Reconnecting...')
+    this.socket.io.on('reconnect_attempt', (attempt) => {
+      this.logger.info(`Reconnection attempt ${attempt}/${reconnectionOpts.maxRetries ?? 10}`)
+    })
+
+    this.socket.io.on('reconnect', () => {
+      this.logger.info('Reconnected successfully')
+    })
+
+    this.socket.io.on('reconnect_failed', () => {
+      this.logger.error('Reconnection failed after maximum attempts')
     })
 
     this.socket.on('connect_error', (err: Error) => {
@@ -70,17 +91,18 @@ export class Raison {
 
       for (const prompt of data.prompts) {
         await this.Prompt.findOneAndUpdate({ id: prompt.id }, prompt, { upsert: true })
+        this.logger.debug(`Synced prompt "${prompt.name}" (id=${prompt.id}, v${prompt.version})`)
       }
 
       await this.Prompt.deleteMany({ id: { $nin: incomingIds } })
 
       resolveReady()
-      this.logger.debug(`Synced ${data.prompts.length} prompt(s)`)
+      this.logger.debug(`Sync complete: ${data.prompts.length} prompt(s)`)
     })
 
     this.socket.on('prompt:deployed', async (prompt: Prompt) => {
       await this.Prompt.findOneAndUpdate({ id: prompt.id }, prompt, { upsert: true })
-      this.logger.debug(`Prompt updated: ${prompt.id}`)
+      this.logger.debug(`Prompt deployed: "${prompt.name}" (id=${prompt.id}, v${prompt.version})`)
     })
   }
 
@@ -92,6 +114,8 @@ export class Raison {
       this.logger.warn(`Prompt not found: ${promptId}`)
       return ''
     }
+
+    this.logger.debug(`Rendering prompt "${prompt.name}" (id=${promptId}, v${prompt.version})`)
 
     if (!variables) return prompt.content
 
