@@ -1,5 +1,5 @@
 import Handlebars from 'handlebars'
-import { createDatabase, type Model } from 'memgoose'
+import { createDatabase } from 'memgoose'
 import { io, type Socket } from 'socket.io-client'
 import { type Logger, type LoggingOptions, resolveLogger } from './logger'
 import { type Prompt, promptSchema } from './prompt'
@@ -25,7 +25,7 @@ export class Raison {
   }
 
   private socket: Socket
-  private Prompt: Model<Prompt>
+  private Prompt
   private readyPromise: Promise<void>
   private logger: Logger
 
