@@ -5,6 +5,7 @@ import type { Prompt } from '../src/prompt'
 
 type SocketHandler = (...args: unknown[]) => unknown
 let socketHandlers: Record<string, SocketHandler> = {}
+let managerHandlers: Record<string, SocketHandler> = {}
 const mockDisconnect = vi.fn()
 const silentLogger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }
 
@@ -14,7 +15,9 @@ vi.mock('socket.io-client', () => ({
       socketHandlers[event] = handler
     }),
     io: {
-      on: vi.fn(),
+      on: vi.fn((event: string, handler: SocketHandler) => {
+        managerHandlers[event] = handler
+      }),
     },
     disconnect: mockDisconnect,
   })),
@@ -36,6 +39,7 @@ describe('Raison', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     socketHandlers = {}
+    managerHandlers = {}
   })
 
   afterEach(() => {
@@ -107,6 +111,84 @@ describe('Raison', () => {
     it('removes trailing slash from baseUrl', () => {
       new Raison({ apiKey: 'rsn_test123', baseUrl: 'https://custom.api.com/' })
       expect(io).toHaveBeenCalledWith('https://custom.api.com/sdk', expect.any(Object))
+    })
+  })
+
+  describe('reconnection', () => {
+    it('uses default reconnection settings', () => {
+      new Raison({ apiKey: 'rsn_test123' })
+      expect(io).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          reconnection: true,
+          reconnectionAttempts: 10,
+          reconnectionDelay: 1000,
+          reconnectionDelayMax: 30000,
+        }),
+      )
+    })
+
+    it('accepts custom reconnection settings', () => {
+      new Raison({
+        apiKey: 'rsn_test123',
+        reconnection: { maxRetries: 5, delay: 2000, delayMax: 60000 },
+      })
+      expect(io).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          reconnection: true,
+          reconnectionAttempts: 5,
+          reconnectionDelay: 2000,
+          reconnectionDelayMax: 60000,
+        }),
+      )
+    })
+
+    it('allows partial reconnection settings', () => {
+      new Raison({
+        apiKey: 'rsn_test123',
+        reconnection: { maxRetries: 3 },
+      })
+      expect(io).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          reconnection: true,
+          reconnectionAttempts: 3,
+          reconnectionDelay: 1000,
+          reconnectionDelayMax: 30000,
+        }),
+      )
+    })
+
+    it('disables reconnection when set to false', () => {
+      new Raison({ apiKey: 'rsn_test123', reconnection: false })
+      expect(io).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          reconnection: false,
+        }),
+      )
+    })
+
+    it('logs reconnection attempts', () => {
+      const customLogger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+      new Raison({ apiKey: 'rsn_test123', logger: customLogger })
+      managerHandlers.reconnect_attempt?.(3)
+      expect(customLogger.info).toHaveBeenCalledWith('Reconnection attempt 3/10')
+    })
+
+    it('logs successful reconnection', () => {
+      const customLogger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+      new Raison({ apiKey: 'rsn_test123', logger: customLogger })
+      managerHandlers.reconnect?.()
+      expect(customLogger.info).toHaveBeenCalledWith('Reconnected successfully')
+    })
+
+    it('logs reconnection failure', () => {
+      const customLogger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+      new Raison({ apiKey: 'rsn_test123', logger: customLogger })
+      managerHandlers.reconnect_failed?.()
+      expect(customLogger.error).toHaveBeenCalledWith('Reconnection failed after maximum attempts')
     })
   })
 
