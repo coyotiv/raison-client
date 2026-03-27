@@ -1,6 +1,6 @@
 {
   "name": "raison",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Official SDK for Raison prompt management platform",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
