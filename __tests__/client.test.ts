@@ -6,12 +6,16 @@ import type { Prompt } from '../src/prompt'
 type SocketHandler = (...args: unknown[]) => unknown
 let socketHandlers: Record<string, SocketHandler> = {}
 const mockDisconnect = vi.fn()
+const silentLogger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }
 
 vi.mock('socket.io-client', () => ({
   io: vi.fn(() => ({
     on: vi.fn((event: string, handler: SocketHandler) => {
       socketHandlers[event] = handler
     }),
+    io: {
+      on: vi.fn(),
+    },
     disconnect: mockDisconnect,
   })),
 }))
@@ -150,7 +154,7 @@ describe('Raison', () => {
     })
 
     it('returns empty string for non-existent prompt', async () => {
-      const client = new Raison({ apiKey: 'rsn_test123' })
+      const client = new Raison({ apiKey: 'rsn_test123', logger: silentLogger })
       await simulateSync([mockPrompt])
 
       const result = await client.render('nonexistent')
@@ -158,7 +162,7 @@ describe('Raison', () => {
     })
 
     it('returns empty string for prompt with empty content', async () => {
-      const client = new Raison({ apiKey: 'rsn_test123' })
+      const client = new Raison({ apiKey: 'rsn_test123', logger: silentLogger })
       await simulateSync([{ ...mockPrompt, content: '' }])
 
       const result = await client.render('test-prompt-id', { name: 'World' })
@@ -166,7 +170,7 @@ describe('Raison', () => {
     })
 
     it('returns raw content when compile fails', async () => {
-      const client = new Raison({ apiKey: 'rsn_test123' })
+      const client = new Raison({ apiKey: 'rsn_test123', logger: silentLogger })
       await simulateSync([{ ...mockPrompt, content: 'Hello {{#if}}!' }])
 
       const result = await client.render('test-prompt-id', { name: 'World' })
@@ -285,6 +289,75 @@ describe('Raison', () => {
 
       expect(result1).toBe('Client 1')
       expect(result2).toBe('Client 2')
+    })
+  })
+
+  describe('logging', () => {
+    it('accepts a custom logger', () => {
+      const customLogger = {
+        debug: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+      }
+      const client = new Raison({ apiKey: 'rsn_test123', logger: customLogger })
+      expect(client).toBeInstanceOf(Raison)
+    })
+
+    it('accepts logging options', () => {
+      const client = new Raison({ apiKey: 'rsn_test123', logger: { level: 'debug' } })
+      expect(client).toBeInstanceOf(Raison)
+    })
+
+    it('logs on sync', async () => {
+      const customLogger = {
+        debug: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+      }
+      new Raison({ apiKey: 'rsn_test123', logger: customLogger })
+      await simulateSync([mockPrompt])
+      expect(customLogger.debug).toHaveBeenCalledWith('Synced 1 prompt(s)')
+    })
+
+    it('logs on prompt:deployed', async () => {
+      const customLogger = {
+        debug: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+      }
+      new Raison({ apiKey: 'rsn_test123', logger: customLogger })
+      await simulateSync([mockPrompt])
+      await socketHandlers['prompt:deployed']?.({ ...mockPrompt, content: 'Updated!' })
+      expect(customLogger.debug).toHaveBeenCalledWith('Prompt updated: test-prompt-id')
+    })
+
+    it('warns when prompt not found in render', async () => {
+      const customLogger = {
+        debug: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+      }
+      const client = new Raison({ apiKey: 'rsn_test123', logger: customLogger })
+      await simulateSync([mockPrompt])
+      await client.render('nonexistent')
+      expect(customLogger.warn).toHaveBeenCalledWith('Prompt not found: nonexistent')
+    })
+
+    it('warns when template compile fails', async () => {
+      const customLogger = {
+        debug: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+      }
+      const client = new Raison({ apiKey: 'rsn_test123', logger: customLogger })
+      await simulateSync([{ ...mockPrompt, content: 'Hello {{#if}}!' }])
+      await client.render('test-prompt-id', { name: 'World' })
+      expect(customLogger.warn).toHaveBeenCalledWith('Template compile failed for prompt: test-prompt-id')
     })
   })
 })
