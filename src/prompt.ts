@@ -6,6 +6,7 @@ export interface Prompt {
   agentId: string
   version: number
   content: string
+  attributes: Record<string, string>
 }
 
 export const promptSchema = new Schema<Prompt>({
@@ -14,6 +15,7 @@ export const promptSchema = new Schema<Prompt>({
   agentId: String,
   version: Number,
   content: String,
+  attributes: Object,
 })
 
 promptSchema.index('id')
