@@ -65,8 +65,8 @@
     "node": ">=18"
   },
   "dependencies": {
-    "handlebars": "^4.7.8",
-    "memgoose": "^2.1.1",
-    "socket.io-client": "^4.8.3"
+    "handlebars": "^4.7.10",
+    "memgoose": "^2.3.0",
+    "socket.io-client": "^4.8.4"
   }
 }
