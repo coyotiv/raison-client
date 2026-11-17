@@ -1,0 +1,25 @@
+{
+  "name": "raison",
+  "version": "1.0.0",
+  "description": "Manage your Raison agent prompts from Claude Code: read, edit, publish, deploy and roll back.",
+  "author": {
+    "name": "Coyotiv",
+    "url": "https://raison.ist"
+  },
+  "homepage": "https://raison.ist",
+  "repository": "https://github.com/coyotiv/raison-client",
+  "license": "MIT",
+  "keywords": [
+    "raison",
+    "prompts",
+    "prompt-management",
+    "mcp"
+  ],
+  "mcpServers": {
+    "raison": {
+      "type": "http",
+      "url": "https://api.raison.ist/mcp"
+    }
+  },
+  "privacyPolicyUrl": "https://raison.ist/privacy-policy"
+}

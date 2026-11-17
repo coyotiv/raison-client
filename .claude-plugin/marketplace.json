@@ -1,0 +1,16 @@
+{
+  "name": "raison",
+  "description": "Raison plugins for Claude Code",
+  "owner": {
+    "name": "Coyotiv",
+    "url": "https://raison.ist"
+  },
+  "plugins": [
+    {
+      "name": "raison",
+      "source": "./",
+      "description": "Manage your Raison agent prompts from Claude Code: read, edit, publish, deploy and roll back.",
+      "version": "1.0.0"
+    }
+  ]
+}
